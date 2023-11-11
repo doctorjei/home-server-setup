@@ -1,0 +1,30 @@
+version: "3.6"
+
+services:
+  portainer:
+    image: docker.io/portainer/portainer-ce:latest
+    container_name: portainer
+    hostname: portainer
+    network_mode: host
+    restart: always
+    volumes:
+      - /srv/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+
+  syncthing:
+    image: docker.io/syncthing/syncthing
+    container_name: syncthing
+    hostname: syncthing
+    network_mode: host
+    restart: always
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /srv/syncthing:/var/syncthing
+      - /srv/syncthing/stfolder:/data/.stfolder
+      - /srv/syncthing/stignore:/data/.stignore
+      - /srv:/data/apps:ro
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE

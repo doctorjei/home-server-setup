@@ -1,0 +1,24 @@
+version: "3.6"
+
+services:
+  rhasspy:
+    image: docker.io/rhasspy/rhasspy:latest
+    command: --user-profiles /profiles --profile en
+    container_name: rhasspy
+    hostname: rhasspy
+    network_mode: host # TODO: Consider isolating from the rest of the machine?
+    restart: always
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+    volumes:
+      - /srv/rhasspy/profiles:/profiles
+      - /dev/snd:/dev/snd
+      - /etc/localtime:/etc/localtime:ro
+#    ports:
+#      - "12101:12101"
+#    networks: # TODO: Consider isolating from the rest of the machine?
+#      - rhasspy
+
+#networks:
+#  rhasspy:
+#    name: rhasspy
