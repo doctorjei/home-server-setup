@@ -1,0 +1,95 @@
+# Requires installation of ansible. Make remote version?
+- name: Spin up Rhasspy Sattelite
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - name: Setup normal user with sudo / admin access
+    user:
+      name: ubuntu
+      groups: adm,sudo
+    tags:
+    - system
+    - users
+    - admin_user
+
+  - name: Setup rhasspy user (include audio access)
+    user:
+      name: rhasspy
+      groups: audio
+      create_home: false
+      system: true
+    tags:
+    - system
+    - containers
+    - users
+    - rhasspy_user
+
+  - name: Upgrade existing system
+    apt:
+      update_cache: yes
+      upgrade: yes
+    tags:
+    - system
+    - containers
+
+  - name: Install tools
+    apt:
+      name:
+      - nano # Everyone needs a sensible editor!
+      - podman-docker
+    tags:
+    - system
+    - containers
+
+  - name: Prepare core directories
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: rhasspy
+      group: rhasspy
+      mode: 0775
+    loop:
+    - /srv/portainer
+    - /srv/syncthing
+    - /srv/syncthing/stfolder
+    tags:
+    - system
+    - containers
+    - filesystem
+
+  - name: Create Syncthing 'stignore' file (if it doesn't exist)
+    copy:
+      content: ""
+      dest: /srv/syncthing/stignore
+      force: false
+      group: rhasspy
+      owner: rhasspy
+      mode: 0644
+    tags:
+    - system
+    - containers
+    - filesystem
+
+  - name: Spin up Portainer and Syncthing # TODO: Rootless operation
+    community.docker.docker_compose:
+      project_name: server_core
+      project_src: docker_compose
+      files:
+      - server_core.yml
+    tags:
+    - system
+    - containers
+    - server_core
+
+  - name: Spin up Rhasspy Service # TODO: Rootless operation
+    community.docker.docker_compose:
+      project_name: rhasspy_service
+      project_src: docker_compose
+      files:
+      - rhasspy_service.yml
+    tags:
+    - system
+    - containers
+    - rhasspy_service
