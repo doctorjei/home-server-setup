@@ -7,7 +7,7 @@ services:
     hostname: homeassistant
     restart: always
     environment:
-      - TZ=America/New_York
+      - "TZ=America/New_York"
     volumes:
       - /srv/homeassistant:/config
     ports:
@@ -23,7 +23,7 @@ services:
     hostname: zwave-server
     restart: always
     environment:
-      - TZ=America/New_York
+      - "TZ=America/New_York"
     volumes:
       - /srv/zwave-server:/usr/src/app/store
     ports:
@@ -42,7 +42,7 @@ services:
     hostname: mosquitto
     restart: always
     environment:
-      - TZ=America/New_York
+      - "TZ=America/New_York"
     volumes:
       - /srv/mosquitto/config:/mosquitto/config
       - /srv/mosquitto/data:/mosquitto/data
