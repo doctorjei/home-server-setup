@@ -8,7 +8,7 @@ services:
     network_mode: host
     restart: always
     environment:
-      - TZ=America/New_York
+      - TZ: America/New_York
     volumes:
       - /srv/portainer:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -22,7 +22,9 @@ services:
     network_mode: host # TODO: Consider locking down for security
     restart: always
     environment:
-      - TZ=America/New_York
+      - TZ: America/New_York
+      - PUID: ${PUID}
+      - PGID: ${PGID}
     volumes:
       - /srv/syncthing:/var/syncthing
       - /srv/syncthing/stfolder:/data/.stfolder

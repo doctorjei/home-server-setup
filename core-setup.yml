@@ -13,6 +13,7 @@
     - system
     - users
     - admin_user
+    register: normie_result
 
   - name: Setup service user (including additional groups if applicable)
     user:
@@ -25,6 +26,14 @@
     - containers
     - users
     - service_user
+    register: service_result
+
+  - name: Extract GID and UID into their own variables
+    set_fact:
+      normie_uid: "{{ normie_result.uid }}"
+      normie_gid: "{{ normie_result.group }}"
+      service_uid: "{{ service_result.uid }}"
+      service_gid: "{{ service_result.group }}"
 
   - name: Upgrade existing system
     apt:
@@ -76,9 +85,13 @@
     community.docker.docker_compose:
       project_name: server_core
       project_src: docker_compose
+      environment:
+        PUID: "{{ service_uid }}"
+        PGID: "{{ service_gid }}"
       files:
       - server_core.yml
     tags:
     - system
     - containers
     - server_core
+
