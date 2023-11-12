@@ -19,8 +19,8 @@
     user:
       name: "{{ service_user | default('svc_user') }}"
       groups: "{{ service_user_groups | default(omit) }}"
-      create_home: false
-      system: true
+      create_home: False
+      system: True
     tags:
     - system
     - containers
@@ -37,8 +37,8 @@
 
   - name: Upgrade existing system
     apt:
-      update_cache: true
-      upgrade: true
+      update_cache: True
+      upgrade: True
     tags:
     - system
     - containers
@@ -56,8 +56,8 @@
     file:
       path: "{{ item }}"
       state: directory
-      owner: "{{ service_user | default('svc_user') }}"
-      group: "{{ service_group | default(omit) }}"
+      owner: 1000 # TODO: Make it the service user, e.g. "{{ service_user | default('svc_user') }}"
+      group: 1000 # TODO: Make it the service user's group, e.g. "{{ service_group | default(omit) }}"
       mode: 0775
     loop:
     - /srv/portainer
@@ -72,9 +72,9 @@
     copy:
       content: ""
       dest: /srv/syncthing/stignore
-      force: false
-      owner: "{{ service_user | default('svc_user') }}"
-      group: "{{ service_group | default(omit) }}"
+      force: False
+      owner: 1000 # TODO: Make it the service user, e.g. "{{ service_user | default('svc_user') }}"
+      group: 1000 # TODO: Make it the service user's group, e.g. "{{ service_group | default(omit) }}"
       mode: 0644
     tags:
     - system
@@ -85,9 +85,9 @@
     community.docker.docker_compose:
       project_name: server_core
       project_src: docker_compose
-      environment:
-        PUID: "{{ service_uid }}"
-        PGID: "{{ service_gid }}"
+#      environment:                  # TODO: Figure out how to make this work. Some day...
+#        PUID: "{{ service_uid }}"
+#        PGID: "{{ service_gid }}"
       files:
       - server_core.yml
     tags:

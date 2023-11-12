@@ -23,8 +23,8 @@ services:
     restart: always
     environment:
       - TZ: America/New_York
-      - PUID: ${PUID}
-      - PGID: ${PGID}
+#      - PUID: ${PUID}          # TODO: Figure out how to import from the ansible script
+#      - PGID: ${PGID}          # TODO: Figure out how to import from the ansible script
     volumes:
       - /srv/syncthing:/var/syncthing
       - /srv/syncthing/stfolder:/data/.stfolder
