@@ -6,8 +6,8 @@ services:
     command: --user-profiles /profiles --profile en
     container_name: rhasspy
     hostname: rhasspy
-    network_mode: host # TODO: Consider isolating from the rest of the machine?
     restart: always
+    network_mode: host # TODO: Consider isolating from the rest of the machine?
 #    labels:
 #     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
     volumes:

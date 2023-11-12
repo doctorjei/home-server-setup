@@ -1,5 +1,5 @@
 # Requires installation of ansible. Make remote version?
-- name: Spin up Rhasspy Sattelite
+- name: Spin up server core
   hosts: localhost
   gather_facts: no
   connection: local
@@ -14,22 +14,22 @@
     - users
     - admin_user
 
-  - name: Setup rhasspy user (include audio access)
+  - name: Setup service user (including additional groups if applicable)
     user:
-      name: rhasspy
-      groups: audio
+      name: "{{ service_user | default('svc_user') }}"
+      groups: "{{ service_user_groups | default(omit) }}"
       create_home: false
       system: true
     tags:
     - system
     - containers
     - users
-    - rhasspy_user
+    - service_user
 
   - name: Upgrade existing system
     apt:
-      update_cache: yes
-      upgrade: yes
+      update_cache: true
+      upgrade: true
     tags:
     - system
     - containers
@@ -47,8 +47,8 @@
     file:
       path: "{{ item }}"
       state: directory
-      owner: rhasspy
-      group: rhasspy
+      owner: "{{ service_user | default('svc_user') }}"
+      group: "{{ service_group | default(omit) }}"
       mode: 0775
     loop:
     - /srv/portainer
@@ -64,8 +64,8 @@
       content: ""
       dest: /srv/syncthing/stignore
       force: false
-      group: rhasspy
-      owner: rhasspy
+      owner: "{{ service_user | default('svc_user') }}"
+      group: "{{ service_group | default(omit) }}"
       mode: 0644
     tags:
     - system
@@ -82,14 +82,3 @@
     - system
     - containers
     - server_core
-
-  - name: Spin up Rhasspy Service # TODO: Rootless operation
-    community.docker.docker_compose:
-      project_name: rhasspy_service
-      project_src: docker_compose
-      files:
-      - rhasspy_service.yml
-    tags:
-    - system
-    - containers
-    - rhasspy_service

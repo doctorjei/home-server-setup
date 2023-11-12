@@ -7,6 +7,8 @@ services:
     hostname: portainer
     network_mode: host
     restart: always
+    environment:
+      - TZ=America/New_York
     volumes:
       - /srv/portainer:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -17,7 +19,7 @@ services:
     image: docker.io/syncthing/syncthing
     container_name: syncthing
     hostname: syncthing
-    network_mode: host
+    network_mode: host # TODO: Consider locking down for security
     restart: always
     environment:
       - TZ=America/New_York
@@ -28,3 +30,5 @@ services:
       - /srv:/data/apps:ro
 #    labels:
 #     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+#    ports:      - 8384:8384      - 22000:22000/tcp      - 22000:22000/udp      - 21027:21027/udp
+

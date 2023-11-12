@@ -1,0 +1,61 @@
+version: "3"
+
+services:
+  homeassistant: # TODO: Make rootless
+    image: lscr.io/linuxserver/homeassistant:latest
+    container_name: homeassistant
+    hostname: homeassistant
+    restart: always
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /srv/homeassistant:/config
+    ports:
+      - '8123:8123'
+    networks:
+      - smarthome
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+
+  zwave-server:
+    image: docker.io/zwavejs/zwave-js-ui
+    container_name: zwave-server
+    hostname: zwave-server
+    restart: always
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /srv/zwave-server:/usr/src/app/store
+    ports:
+      - '3000:3000'
+      - '8091:8091'
+    devices:
+      - /dev/ttyACM0:/dev/zwave # TODO: This should not be hardcoded. Look for alternatives.
+    networks:
+      - smarthome
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+
+  mosquitto:
+    image: docker.io/eclipse-mosquitto
+    container_name: mosquitto
+    hostname: mosquitto
+    restart: always
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /srv/mosquitto/config:/mosquitto/config
+      - /srv/mosquitto/data:/mosquitto/data
+      - /srv/mosquitto/log:/mosquitto/log
+    ports:
+      - '1883:1883'
+      - '9001:9001'
+    networks:
+      - smarthome
+#    labels:
+#     - io.portainer.accesscontrol.teams: YOUR_TEAM_HERE
+
+networks:
+  smarthome:
+    name: smarthome
+    external: true

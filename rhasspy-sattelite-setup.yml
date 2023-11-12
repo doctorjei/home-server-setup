@@ -1,0 +1,35 @@
+# Requires installation of ansible. Make remote version?
+- name: Complete basic server core setup
+  import_playbook: core-setup.yml
+  vars:
+    service_user: rhasspy
+    server_user_groups: "audio"
+
+- name: Spin up Rhasspy Sattelite
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - name: Create service directory
+    file:
+      path: /srv/rhasspy
+      state: directory
+      owner: rhasspy
+      group: rhasspy
+      mode: 0775
+    tags:
+    - system
+    - containers
+    - filesystem
+
+  - name: Spin up Rhasspy service # TODO: Rootless operation
+    community.docker.docker_compose:
+      project_name: rhasspy_service
+      project_src: docker_compose
+      files:
+      - rhasspy_service.yml
+    tags:
+    - system
+    - containers
+    - rhasspy_service

@@ -1,19 +1,45 @@
 # home-server-setup
-Setup Files for Home Server Instances and Satellites for Smart Home
+Collection of Setup Files for Smart Home Servers & Satellites
 
-The initial set of files assumes an Ubuntu 22.04 LTS (Jammy) or compatible system. The scripts require
-ansible and git. You can also fork the repo to tweak scripts for other systems
 
-To install them on Jammy, use the following commands:
+## Overview
+The initial set of files assumes an Ubuntu 22.04 LTS (Jammy) or compatible system using the `apt` tool.
+The scripts also require ansible and git. Feel free to fork and/or submit pull requests for other systems!
 
-`sudo apt update`
-`sudo apt install ansible git`
+All playbooks include the `server_core` stack, which includes the following services:
+- **Portainer**: Web UI container management (via docker / podman)
+- **Syncthing**: File syncing and versioning (for backups / rollback)
 
-To set up a Rhasspy satellite computer from a basic Ubuntu installation, complete the following steps:
+These playbooks are available in this repo:
+| Playbook                           | Description
+|--                                  |--
+| **`rhasspy-sattelite-setup.yml`**  | Rhasspy Sattelite (room listener) setup
+| **`homeassistant-base-setup.yml`** | Home Assistant core with Mosquitto (MQTT), Rhasspy Base Station, and Z-Wave JS Server
 
-`sudo ansible-pull -U https://github.com/doctorjei/home-server-setup.git -i localhost`
 
-This playbook sets up Portainer, Syncthing, and Rhasspy on standard ports - Portainer for management,
-Syncthing for backups, and of course Rhasspy for the saltellite service. :)
+## Preparation
+To run a playbook on a fresh Jammy install, use the following commands:
 
-The playbook also creates a 'podman' user for containers and the regular / sudoer 'ubuntu' user.
+1. `sudo apt update`
+2. `sudo apt install ansible git`
+
+
+## Deployment
+Use `ansible-pull` to install the desired system. For example, to set up a Rhasspy sattelite listener, issue
+this command:
+
+- `sudo ansible-pull -U https://github.com/doctorjei/home-server-setup.git -i localhost
+rhasspy-sattelite-setup.yml`
+
+
+## Connecting
+Services are allocated at their default ports. Here are some of them:
+
+| Service          | Port(s)                                                                           |||
+|--                |--                                                                             |--|--|
+| Home Assistant   | 8123/tcp (Web UI / Websocket)                                                     |||
+| Mosquitto        | 1883/tcp (Event Traffic)                                                          |||
+| Portainer        | 9443/tcp (Web UI) | 8000/tcp (Edge Point Access)                                   ||
+| Rhasspy          | 12101/tcp (Web UI)                                                                |||
+| Syncthing        | 8384/tcp (Web UI) | 21027/udp (Discovery) | 22000/tcp/udp (Peer Connect / Transfer) |
+| Z-Wave JS Server | 8901/tcp (Web UI) | 3000/tcp (Websocket)                                           ||

@@ -1,0 +1,64 @@
+# Requires installation of ansible. Make remote version?
+- name: Complete basic server core setup
+  import_playbook: core-setup.yml
+  vars:
+    service_user: homeassistant
+
+- name: Spin up Home Assistant with Rhasspy base station
+  hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+  - name: Setup homeassistant user
+    user:
+      name: homeassistant
+      create_home: false
+      system: true
+    tags:
+    - system
+    - containers
+    - users
+    - ha_user
+
+  - name: Prepare core directories
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: homeassistant
+      group: homeassistant
+      mode: 0775
+    loop:
+    - /srv/homeassistant
+    - /srv/mosquitto
+    - /srv/mosquitto/config
+    - /srv/mosquitto/data
+    - /srv/mosquitto/log
+    - /srv/rhasspy
+    - /srv/zwave-server
+    tags:
+    - system
+    - containers
+    - filesystem
+
+  - name: Spin up Home Assistant Services # TODO: Rootless operation
+    community.docker.docker_compose:
+      project_name: homeassistant
+      project_src: docker_compose
+      files:
+      - homeassistant_services.yml
+    tags:
+    - system
+    - containers
+    - ha_services
+
+  - name: Spin up Rhasspy Instance (for Base Station) # TODO: Rootless operation
+    community.docker.docker_compose:
+      project_name: rhasspy_base
+      project_src: docker_compose
+      files:
+      - rhasspy_service.yml
+    tags:
+    - system
+    - containers
+    - rhasspy_service
