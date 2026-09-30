@@ -76,12 +76,29 @@ Interpretation:
 Suspects, in order: old firmware `P3CR010`; APST (autonomous power-state transitions) triggering
 the firmware bug.
 
-### Next Steps
-1. Test with APST disabled: add `nvme_core.default_ps_max_latency_us=0` to the kernel line (GRUB `e`,
-   one-time), confirm with `cat /sys/module/nvme_core/parameters/default_ps_max_latency_us`, and
-   repeat the journalctl test. Runtime alternative: `nvme set-feature /dev/nvme0 -f 0x0c -v 0`.
-2. If that fixes it, add the parameter permanently to the main OS's GRUB config.
-3. Either way, update firmware to `P3CR021` via Crucial's bootable ISO (back up first).
+### Resolution: APST Disabled (2026-09-30)
+- With `nvme_core.default_ps_max_latency_us=0`, the same `journalctl --list-boots` that froze the
+  system completed in 2 s.
+- Journal history shows failed boots since at least 2026-09-28: most stop within seconds of
+  `Flush Journal to Persistent Storage` (first disk write burst); the longest (09:29 on 09-30) ran a
+  normal desktop session for 6 minutes, then logging stopped mid-activity. No kernel or relevant
+  package changes since the March 2026 install (kernel `6.17.0-19`), so the drive's behavior changed
+  on its own (aging QLC + original firmware).
+- Fix made permanent: `nvme_core.default_ps_max_latency_us=0` added to `GRUB_CMDLINE_LINUX_DEFAULT`
+  in `/etc/default/grub` (backup at `/etc/default/grub.bak`), then `update-grub`. mantis now boots
+  normally and is reachable over SSH (`himawari@192.168.2.32`).
+
+### Remaining
+1. Update firmware to `P3CR021` via Crucial's bootable ISO (back up first). Keep the APST
+   workaround until then.
+2. Watch the media error counter (baseline 177); budget for a replacement drive.
+3. Separate issue: **no HDMI output.** The only GPU is an NVIDIA RTX 40-series (`10de:2709`), and
+   the proprietary driver takes over the console (`fbcon: nvidia-drmdrmfb`) and the display goes
+   blank. `nomodeset` does not stop it; blocking the modules
+   (`modprobe.blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm`) does, but the screen still
+   blanks later in boot. Under investigation.
+4. Cleanup: `casper-md5check.service` fails on every boot (installer leftover). Remove with
+   `sudo apt purge casper`.
 
 ## Monitoring
 Re-check periodically. If the media error count rises above 177, plan to replace the drive.
