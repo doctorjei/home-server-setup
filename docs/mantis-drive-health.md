@@ -89,6 +89,12 @@ the firmware bug.
   normally and is reachable over SSH (`himawari@192.168.2.32`).
 
 ### Remaining
+**Status (2026-09-30): good enough for now.** mantis boots and is reachable over SSH. An OS reinstall
+is planned. On reinstall, the APST fix is lost with the old GRUB config: either update the drive
+firmware first, or add `nvme_core.default_ps_max_latency_us=0` at the installer's GRUB prompt
+(press `e`) **and** to `/etc/default/grub` on the new system before its first normal boot.
+Otherwise the installer or new OS may lock up the same way.
+
 1. Update firmware to `P3CR021` via Crucial's bootable ISO (back up first). Keep the APST
    workaround until then.
 2. Watch the media error counter (baseline 177); budget for a replacement drive.
