@@ -89,7 +89,7 @@ the firmware bug.
   normally and is reachable over SSH (`himawari@192.168.2.32`).
 
 ### Remaining
-**Status (2026-09-30): good enough for now.** mantis boots and is reachable over SSH. An OS reinstall
+**Status (2026-09-30): working.** mantis boots unattended, is reachable over SSH, and the display works in 4K@60. An OS reinstall
 is planned. On reinstall, the APST fix is lost with the old GRUB config: either update the drive
 firmware first, or add `nvme_core.default_ps_max_latency_us=0` at the installer's GRUB prompt
 (press `e`) **and** to `/etc/default/grub` on the new system before its first normal boot.
@@ -98,21 +98,22 @@ Otherwise the installer or new OS may lock up the same way.
 1. Update firmware to `P3CR021` via Crucial's bootable ISO (back up first). Keep the APST
    workaround until then.
 2. Watch the media error counter (baseline 177); budget for a replacement drive.
-3. Separate issue, **no HDMI output: diagnosed.** The RTX 4070 (driver 580.126.09, open module)
-   and the Cinnamon desktop were running fine. The display is a 4K TV on `HDMI-0`, and X picked its
-   "preferred" mode `3840x2160@30`, which the TV/cable/port did not show ("no signal"). Forcing
-   `xrandr --output HDMI-0 --mode 1920x1080 --rate 60` brought the picture back (not persistent;
-   the screen goes blank again after a reboot). The TV is a Vizio E70-E3; the saved
-   `~/.config/cinnamon-monitors.xml` (2026-03-28) shows 4K@30 at scale 2 worked in March, including
-   an earlier `DP-1` hookup, so the cable/port/adapter or a TV setting has changed since.
-   **Deferred.** To pick up later:
-   - Quick picture: over SSH run
-     `sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 xrandr --output HDMI-0 --mode 1920x1080 --rate 60`.
-   - Persistent 1080p: `/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf` with a `Device`/`Screen` pair
-     (`Driver "nvidia"`, `Option "metamodes" "HDMI-0: 1920x1080_60 +0+0"`) plus the Cinnamon setting.
-   - Restore 4K: test the 4K modes with an auto-reverting xrandr loop; check the Vizio's
-     *Full UHD Color* setting and which HDMI port supports 4K; try another cable; check whether the
-     NVIDIA driver changed since March (`zgrep nvidia-driver /var/log/apt/history.log*`).
+3. Separate issue, **no HDMI output: fixed (4K@60).** The display is a Vizio E70-E3 4K TV on
+   `HDMI-0` (RTX 4070, driver 580.126.09). It no longer shows the 30 Hz modes on this input (it did
+   in March), but `3840x2160 @ 59.94` works. X started at 59.94, but LightDM autologs in as
+   `himawari`, and the Cinnamon session then switched to the TV's preferred `3840x2160 @ 30`
+   (blank), even with `cinnamon-monitors.xml` set to `59.940`. Current setup (all three layers):
+   - `/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf`: `Option "metamodes" "HDMI-0: 3840x2160_60 +0+0"`
+   - `/usr/local/bin/fix-hdmi-mode` (runs `/sbin/prime-offload`, then
+     `xrandr --output HDMI-0 --mode 3840x2160 --rate 59.94`), hooked in
+     `/etc/lightdm/lightdm.conf.d/90-hdmi-mode.conf` as `display-setup-script` and
+     `session-setup-script`
+   - `~/.config/autostart/fix-hdmi-mode.desktop`: runs the same `xrandr` 5 s after login. **This
+     is the part that actually fixes it**, because it runs after Cinnamon. Expect a few seconds of
+     black after the splash.
+   - Emergency picture over SSH:
+     `sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 xrandr --output HDMI-0 --mode 3840x2160 --rate 59.94`
+   - Mode tester: `~/modetest.sh` (tries each mode, asks y/n, auto-reverts after 30 s).
 4. Cleanup: `casper-md5check.service` fails on every boot (installer leftover). Remove with
    `sudo apt purge casper`.
 
