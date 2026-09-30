@@ -95,10 +95,18 @@ the firmware bug.
 3. Separate issue, **no HDMI output: diagnosed.** The RTX 4070 (driver 580.126.09, open module)
    and the Cinnamon desktop were running fine. The display is a 4K TV on `HDMI-0`, and X picked its
    "preferred" mode `3840x2160@30`, which the TV/cable/port did not show ("no signal"). Forcing
-   `xrandr --output HDMI-0 --mode 1920x1080 --rate 60` brought the picture back. Made persistent
-   via `/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf` (metamodes `HDMI-0: 1920x1080_60`) plus the
-   Cinnamon display setting. For 4K later: try a certified high-speed HDMI cable and enable the
-   TV's enhanced/UHD HDMI input mode.
+   `xrandr --output HDMI-0 --mode 1920x1080 --rate 60` brought the picture back (not persistent;
+   the screen goes blank again after a reboot). The TV is a Vizio E70-E3; the saved
+   `~/.config/cinnamon-monitors.xml` (2026-03-28) shows 4K@30 at scale 2 worked in March, including
+   an earlier `DP-1` hookup, so the cable/port/adapter or a TV setting has changed since.
+   **Deferred.** To pick up later:
+   - Quick picture: over SSH run
+     `sudo DISPLAY=:0 XAUTHORITY=/var/run/lightdm/root/:0 xrandr --output HDMI-0 --mode 1920x1080 --rate 60`.
+   - Persistent 1080p: `/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf` with a `Device`/`Screen` pair
+     (`Driver "nvidia"`, `Option "metamodes" "HDMI-0: 1920x1080_60 +0+0"`) plus the Cinnamon setting.
+   - Restore 4K: test the 4K modes with an auto-reverting xrandr loop; check the Vizio's
+     *Full UHD Color* setting and which HDMI port supports 4K; try another cable; check whether the
+     NVIDIA driver changed since March (`zgrep nvidia-driver /var/log/apt/history.log*`).
 4. Cleanup: `casper-md5check.service` fails on every boot (installer leftover). Remove with
    `sudo apt purge casper`.
 
