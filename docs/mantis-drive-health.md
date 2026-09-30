@@ -47,10 +47,41 @@ the errors most likely predate the current install.
 | btrfs scrub (216 GiB)                         | No errors                                |
 | `/var/log/journal` (1.3 GB)                   | Lists and reads without stalling         |
 
-**Conclusion:** the drive and all filesystems are healthy. An earlier `ls` hang in the journal
-directory did not reproduce and was not caused by on-disk damage (possible firmware/controller
-hiccup). The boot failure is still under investigation. The journal was last written at 14:11 on
-2026-09-30, so at least one recent boot got as far as systemd.
+**Conclusion:** the stored data and all filesystems are healthy. The journal was last written at
+14:11 on 2026-09-30, so at least one recent boot got as far as systemd.
+
+## Controller Lockup (2026-09-30), Likely Cause of Boot Failure
+Running `journalctl -D /var/log/journal --list-boots` (chrooted into `@`) hung in `D` state, and
+the whole system froze. The kernel log showed:
+
+```
+nvme nvme0: I/O tag 70 (e046) opcode 0x2 (I/O Cmd) QID 6 timeout, aborting req_op:READ(0) size:131072
+  (x4, tags 70-73)
+nvme nvme0: I/O tag 70 (e046) opcode 0x2 (I/O Cmd) QID 6 timeout, reset controller
+nvme nvme0: Device not ready; aborting reset, CSTS=0x1
+nvme nvme0: Abort status: 0x371
+nvme0n1: I/O Cmd(0x2) @ LBA 454954056, 256 blocks, I/O Error (sct 0x3 / sc 0x71)
+I/O error, dev nvme0n1, sector 454953800 op 0x0:(READ) ...
+```
+
+Interpretation:
+- `sct 0x3 / sc 0x71` / `0x371` = *command aborted by host*: Linux cancelled the requests after
+  timeouts. The drive did not report media errors, and these sectors (~233 GB in, inside p4) read
+  cleanly during the full `dd` scan.
+- `CSTS=0x1`: the controller is still on the PCIe bus and claims ready, but ignores commands,
+  including reset. This is a **firmware lockup**, not a PCIe dropout (that would be `CSTS=0xffffffff`).
+- Long sequential reads (`dd`, scrub) pass; bursty small reads (`ls`, `journalctl`) trigger the hang.
+- Recovery requires a full power cycle (unplug ~10 s).
+
+Suspects, in order: old firmware `P3CR010`; APST (autonomous power-state transitions) triggering
+the firmware bug.
+
+### Next Steps
+1. Test with APST disabled: add `nvme_core.default_ps_max_latency_us=0` to the kernel line (GRUB `e`,
+   one-time), confirm with `cat /sys/module/nvme_core/parameters/default_ps_max_latency_us`, and
+   repeat the journalctl test. Runtime alternative: `nvme set-feature /dev/nvme0 -f 0x0c -v 0`.
+2. If that fixes it, add the parameter permanently to the main OS's GRUB config.
+3. Either way, update firmware to `P3CR021` via Crucial's bootable ISO (back up first).
 
 ## Monitoring
 Re-check periodically. If the media error count rises above 177, plan to replace the drive.
@@ -66,3 +97,8 @@ sudo btrfs device stats /
 - btrfs: `tce-load -wi btrfs-progs`, then `sudo modprobe btrfs` before mounting, and pass
   `-t btrfs` explicitly (BusyBox `mount` otherwise fails with "Invalid argument").
 - Avoid running `fsck` on p1 while TinyCore is using it (its `tce/` directory is there).
+- TinyCore boots from an entry in the main GRUB menu (press Esc during boot if the menu is hidden).
+- When the NVMe hangs, extension binaries (coreutils `tail`, `dmesg`, even the terminal) freeze too,
+  because they are loop-mounted from the ESP. Use `busybox <cmd>` to keep working.
+- Persist SSH across reboots: add `openssh.tcz` to `onboot.lst`, add `usr/local/etc/ssh` and
+  `etc/shadow` to `/opt/.filetool.lst`, then run `filetool.sh -b`.
