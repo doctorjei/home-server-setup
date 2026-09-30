@@ -92,11 +92,13 @@ the firmware bug.
 1. Update firmware to `P3CR021` via Crucial's bootable ISO (back up first). Keep the APST
    workaround until then.
 2. Watch the media error counter (baseline 177); budget for a replacement drive.
-3. Separate issue: **no HDMI output.** The only GPU is an NVIDIA RTX 40-series (`10de:2709`), and
-   the proprietary driver takes over the console (`fbcon: nvidia-drmdrmfb`) and the display goes
-   blank. `nomodeset` does not stop it; blocking the modules
-   (`modprobe.blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm`) does, but the screen still
-   blanks later in boot. Under investigation.
+3. Separate issue, **no HDMI output: diagnosed.** The RTX 4070 (driver 580.126.09, open module)
+   and the Cinnamon desktop were running fine. The display is a 4K TV on `HDMI-0`, and X picked its
+   "preferred" mode `3840x2160@30`, which the TV/cable/port did not show ("no signal"). Forcing
+   `xrandr --output HDMI-0 --mode 1920x1080 --rate 60` brought the picture back. Made persistent
+   via `/etc/X11/xorg.conf.d/20-nvidia-hdmi.conf` (metamodes `HDMI-0: 1920x1080_60`) plus the
+   Cinnamon display setting. For 4K later: try a certified high-speed HDMI cable and enable the
+   TV's enhanced/UHD HDMI input mode.
 4. Cleanup: `casper-md5check.service` fails on every boot (installer leftover). Remove with
    `sudo apt purge casper`.
 
