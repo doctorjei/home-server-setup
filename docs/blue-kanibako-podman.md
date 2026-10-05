@@ -15,6 +15,7 @@ Podman 5.4.2 with **fuse-overlayfs**.
   `kanibako-kanibako` and `kanibako-fodder` were removed and re-created; power was lost again at
   22:44. Their layer metadata ("incomplete" flag) was never cleared on disk. Both broke a day later.
 - `podman system check --quick` after cleanup: clean.
+- Container creation takes ~74 s, mostly from kanibako's own permission adjustments at setup.
 
 ## After any unclean shutdown (before kanibako starts containers)
 1. Check the LXC's underlying filesystem on blue (`pct config 300 | grep rootfs`).
