@@ -34,20 +34,25 @@ Podman 5.4.2 with **fuse-overlayfs**.
 - Because `agent`'s Podman storage sat on that overlay (`backingFs=overlayfs`), native overlay was
   impossible and Podman used fuse-overlayfs (configured in `~/.config/containers/storage.conf`
   line 5, now commented out; backup at `storage.conf.bak-fuse`).
-- Check that kento preserves the `mp0` entry (or has its own mount option) so it survives a kento
-  re-create or image update of the kanibako LXC.
-- Fix in progress: btrfs subvolume `/var/lib/kanibako-podman` on blue (owned 1000:1000) mounted into
-  CT 300 as `mp0` at `/home/agent/.local/share/containers`. It is excluded from backups and is
-  disposable (images re-pullable; agent data lives in bind mounts under
-  `~/.local/share/kanibako/…` and `~/workspace/…`).
+- **Fixed (2026-10-05):** btrfs subvolume `/var/lib/kanibako-podman` on blue (owned 1000:1000),
+  bind-mounted into CT 300 via a raw LXC entry in `/etc/pve/lxc/300.conf`:
+  `lxc.mount.entry: /var/lib/kanibako-podman home/agent/.local/share/containers none bind,create=dir 0 0`
+  Verified: `backingFs=btrfs`, `useNativeDiff=true`, test container root is `overlay / overlay`.
+  - Proxmox `mp0:` does **not** work here: PVE mounts it before kento's `lxc.hook.pre-mount`
+    (`/var/lib/lxc/300/kento-hook`) builds the overlay root, which then covers it.
+    `lxc.mount.entry` lines are applied after the hook (same mechanism as the existing
+    `/net/workspace/kanibako/{projects,settings}` mounts).
+  - If kento regenerates `300.conf`, this line must be carried into kento's config for the LXC.
+  - Storage is disposable (images re-pullable). Agent data lives on `/net/workspace/kanibako/…`
+    (network share) via the bind mounts above. Not covered by Proxmox backups.
 - ⚠️ Lesson: `podman system reset` with `--root/--runroot` overrides still clears the user's shared
   runtime state (tmpdir, locks). It orphaned the running containers until an LXC restart +
   `podman system renumber`. Don't use it for test storage.
 
 ## To do
 - [ ] Automate step 2 at boot, before kanibako starts (depends on how kanibako launches).
-- [ ] Switch `agent`'s storage to native overlay via the `mp0` btrfs mount (see above); verify
-      `backingFs=btrfs` and `overlay / overlay` in a test container.
+- [x] Switch `agent`'s storage to native overlay (done 2026-10-05, see above). After kanibako
+      re-creates its containers, confirm `pgrep -c fuse-overlayfs` in CT 300 prints 0.
 - [ ] zram swap on blue.
 - [ ] Optional: second 16GB DDR4 SODIMM if a physical second slot exists.
 - [ ] Later: reconsider the privileged LXC (AI agent containers; escape = root on a cluster node).
