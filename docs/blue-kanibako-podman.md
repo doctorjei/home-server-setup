@@ -51,8 +51,11 @@ Podman 5.4.2 with **fuse-overlayfs**.
 
 ## To do
 - [ ] Automate step 2 at boot, before kanibako starts (depends on how kanibako launches).
-- [x] Switch `agent`'s storage to native overlay (done 2026-10-05, see above). After kanibako
-      re-creates its containers, confirm `pgrep -c fuse-overlayfs` in CT 300 prints 0.
+- [x] Switch `agent`'s storage to native overlay (done 2026-10-05, see above). Result after
+      re-creating containers: `fuse-overlayfs` processes 0; blue memory used 12Gi → 5Gi,
+      available 3.2Gi → 10Gi.
+- [ ] Optional: share images host↔guest via a UID-1000-owned `additionalimagestores` store
+      (needs matching `/etc/subuid`/`subgid` for `jjb` on blue and `agent` in CT 300).
 - [ ] zram swap on blue.
 - [ ] Optional: second 16GB DDR4 SODIMM if a physical second slot exists.
 - [ ] Later: reconsider the privileged LXC (AI agent containers; escape = root on a cluster node).
